@@ -1,0 +1,2098 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Cricket Stats Tracker</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #1a73e8;
+            --secondary-color: #5f6368;
+            --bg-color: #f1f3f4;
+            --text-color: #202124;
+            --light-grey: #dadce0;
+            --white: #ffffff;
+            --danger-color: #d93025;
+            --success-color: #1e8e3e;
+            --warning-color: #ff9800;
+        }
+        body {
+            font-family: "Google Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            margin: 0;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .header {
+            background-color: var(--white);
+            padding: 0 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            transition: background-color 0.3s;
+        }
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .card {
+            background-color: var(--white);
+            border-radius: 8px;
+            box-shadow: 0 1px 2px 0 rgba(60,64,67,.3), 0 2px 6px 2px rgba(60,64,67,.15);
+            padding: 1.5rem 2rem;
+            margin-bottom: 2rem;
+            transition: background-color 0.3s;
+        }
+        h1, h2, h3 {
+            color: var(--secondary-color);
+            border-bottom: 1px solid var(--light-grey);
+            padding-bottom: 10px;
+            margin-top: 0;
+            transition: color 0.3s, border-color 0.3s;
+        }
+        h1 {
+            text-align: center;
+            border-bottom: none;
+            margin: 1rem 0 2rem 0;
+            color: #3c4043;
+        }
+        h3 {
+            margin-top: 2rem;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            table-layout: auto;
+        }
+        th, td {
+            border: 1px solid var(--light-grey);
+            padding: 12px;
+            text-align: center;
+            vertical-align: middle;
+            transition: border-color 0.3s;
+        }
+        td:first-child {
+            text-align: left;
+        }
+        thead th {
+            background-color: #e9ecef;
+            color: var(--secondary-color);
+            font-weight: 600;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        tbody tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        input, select, button {
+            width: 100%;
+            padding: 12px;
+            border-radius: 5px;
+            border: 1px solid #ced4da;
+            box-sizing: border-box;
+            font-size: 1rem;
+        }
+        button {
+            color: var(--white);
+            background-color: var(--primary-color);
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.2s, box-shadow 0.2s;
+        }
+        .btn-success {
+            background-color: var(--success-color);
+        }
+        .btn-success:hover {
+            background-color: #1a7e3a;
+        }
+        .btn-warning {
+            background-color: var(--warning-color);
+        }
+        .btn-warning:hover {
+            background-color: #e68900;
+        }
+        .btn-danger {
+            background-color: var(--danger-color);
+        }
+        .btn-danger:hover {
+            background-color: #bf261e;
+        }
+        .btn-small {
+            padding: 8px 12px;
+            font-size: 0.85rem;
+        }
+        .tab-nav {
+            display: flex;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            border-bottom: 1px solid var(--light-grey);
+            margin: 0 auto;
+            max-width: 1300px;
+        }
+        .tab-button {
+            background: none;
+            border: none;
+            color: var(--secondary-color);
+            padding: 1rem 1.5rem;
+            font-size: 1.1rem;
+            font-weight: 500;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -1px;
+            white-space: nowrap;
+        }
+        .tab-button.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+            font-weight: 600;
+        }
+        .tab-pane {
+            display: none;
+        }
+        .tab-pane.active {
+            display: block;
+        }
+        .settings-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            max-width: 400px;
+            margin-top: 1.5rem;
+        }
+        .stats-header {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+        .stats-header img, #playerListTable img {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            background-color: var(--light-grey);
+        }
+        .player-bio {
+            display: flex;
+            flex-direction: column;
+        }
+        .player-bio p {
+            margin: 2px 0;
+            font-size: 0.9rem;
+        }
+        .stats-filter, .h2h-filters-container {
+            margin: 1.5rem 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            align-items: center;
+        }
+        .stats-filter > div, .h2h-filters > div {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        .stats-filter label, .h2h-filters label {
+            font-weight: bold;
+        }
+        .stats-tables-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+        }
+        .performance-row {
+            border: 1px solid var(--light-grey);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+        .performance-row-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            border-bottom: 1px solid var(--light-grey);
+            padding-bottom: 1rem;
+            margin-bottom: 1rem;
+        }
+        .performance-row-header select {
+            flex-grow: 1;
+        }
+        .perf-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+        .perf-group h4 {
+            margin: 0 0 0.5rem 0;
+            font-size: 1rem;
+            color: var(--primary-color);
+            border-bottom: none;
+        }
+        .perf-group .input-pair {
+            display: grid;
+            grid-template-columns: 80px 1fr;
+            gap: 0.5rem;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        .perf-group .input-pair label {
+            font-size: 0.85rem;
+            text-align: right;
+        }
+        .dnb-group {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .dnb-group label {
+            font-size: 0.8rem;
+        }
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            background-color: var(--primary-color);
+            color: white;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .badge-container {
+            display: flex;
+            flex-wrap: wrap;
+            margin: 1rem 0;
+        }
+        .recent-form {
+            display: flex;
+            gap: 0.5rem;
+            margin: 1rem 0;
+            flex-wrap: wrap;
+        }
+        .recent-score {
+            padding: 0.5rem;
+            border-radius: 4px;
+            background-color: var(--light-grey);
+            min-width: 40px;
+            text-align: center;
+        }
+        .recent-score.highlight {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        .leaderboard-table {
+            width: 100%;
+            margin-top: 1rem;
+        }
+        .leaderboard-table th, .leaderboard-table td {
+            text-align: center;
+        }
+        .leaderboard-table tbody tr:first-child {
+            background-color: rgba(255, 215, 0, 0.2);
+        }
+        .leaderboard-table tbody tr:nth-child(2) {
+            background-color: rgba(192, 192, 192, 0.2);
+        }
+        .leaderboard-table tbody tr:nth-child(3) {
+            background-color: rgba(205, 127, 50, 0.2);
+        }
+        .tournament-selector {
+            margin-bottom: 1rem;
+        }
+        .achievement-card {
+            border: 1px solid var(--light-grey);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        .achievement-card.unlocked {
+            background-color: rgba(30, 142, 62, 0.1);
+            border-color: var(--success-color);
+        }
+        .achievement-card.locked {
+            opacity: 0.6;
+        }
+        .solo-player-list, .team-player-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            min-height: 30px;
+            padding: 5px;
+            border: 1px solid var(--light-grey);
+            border-radius: 5px;
+        }
+        .solo-player-tag, .team-player-tag {
+            background-color: #e0e0e0;
+            padding: 0.3rem 0.6rem;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            font-size: 0.9rem;
+        }
+        .solo-player-tag button, .team-player-tag button {
+            all: unset;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
+            background-color: #b0b0b0;
+            color: white;
+            border-radius: 50%;
+            cursor: pointer;
+            line-height: 1;
+        }
+        .team-selector-container {
+            margin-top: 1rem;
+            display: none;
+        }
+        .avatar-upload-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .avatar-preview {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            background-color: var(--light-grey);
+        }
+        .avatar-upload-btn {
+            padding: 0.5rem;
+            font-size: 0.8rem;
+        }
+        
+        /* Dark Mode */
+        body.dark-mode {
+            --bg-color: #202124;
+            --text-color: #e8eaed;
+            --secondary-color: #bdc1c6;
+            --light-grey: #3c4043;
+            --white: #28292d;
+        }
+        body.dark-mode thead th {
+            background-color: #3c4043;
+        }
+        body.dark-mode tbody tr:nth-child(even) {
+            background-color: #2a2a2a;
+        }
+        body.dark-mode input, body.dark-mode select {
+            background-color: #3c4043;
+            border-color: #5f6368;
+            color: var(--text-color);
+        }
+        body.dark-mode .badge-container .badge {
+            background-color: #5f6368;
+        }
+        body.dark-mode .recent-score {
+            background-color: #3c4043;
+        }
+        body.dark-mode .achievement-card {
+            background-color: #28292d;
+        }
+        body.dark-mode .solo-player-tag, body.dark-mode .team-player-tag {
+            background-color: #3c4043;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <nav class="tab-nav">
+            <button class="tab-button active" data-tab="home">Home</button>
+            <button class="tab-button" data-tab="log-match">Log Match</button>
+            <button class="tab-button" data-tab="h2h-stats">H2H Stats</button>
+            <button class="tab-button" data-tab="match-history">Match History</button>
+            <button class="tab-button" data-tab="tournaments">Tournaments</button>
+            <button class="tab-button" data-tab="leaderboard">Leaderboard</button>
+            <button class="tab-button" data-tab="settings">Settings</button>
+        </nav>
+    </header>
+
+    <main class="container">
+        <div id="home" class="tab-pane active">
+            <div class="card">
+                <h2 id="playerFormTitle">Add New Player</h2>
+                <form id="addPlayerForm" class="form-grid">
+                    <input type="text" id="playerName" placeholder="Player Name" required>
+                    <input type="date" id="playerDob" title="Date of Birth">
+                    <input type="text" id="playerRole" placeholder="Playing Role">
+                    <input type="text" id="battingStyle" placeholder="Batting Style">
+                    <input type="text" id="bowlingStyle" placeholder="Bowling Style">
+                    <div class="avatar-upload-container">
+                        <img id="avatarPreview" class="avatar-preview" src="https://www.gstatic.com/images/branding/product/1x/avatar_circle_grey_512dp.png" alt="Avatar Preview">
+                        <input type="file" id="avatarUpload" accept="image/*" style="display: none;">
+                        <button type="button" id="avatarUploadBtn" class="avatar-upload-btn">Upload Avatar</button>
+                    </div>
+                    <button type="submit" id="submitPlayerBtn" class="btn-success">Add Player</button>
+                </form>
+                <h3 style="margin-top: 2rem;">Player Roster</h3>
+                <table id="playerListTable">
+                    <thead>
+                        <tr>
+                            <th>Avatar</th>
+                            <th>Name</th>
+                            <th>Recent Form</th>
+                            <th>Role</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="log-match" class="tab-pane">
+            <div class="card">
+                <h2 id="matchFormTitle">Log a New Match</h2>
+                <form id="logMatchForm">
+                    <div class="form-grid">
+                        <input type="date" id="matchDate" required>
+                        <select id="matchFormat" required>
+                            <option value="">-- Select Format --</option>
+                            <option value="Test">Test</option>
+                            <option value="ODI">ODI</option>
+                            <option value="T20">T20</option>
+                            <option value="10 Overs">10 Overs</option>
+                            <option value="5 Overs">5 Overs</option>
+                            <option value="Other">Other</option>
+                        </select>
+                        <select id="matchTournament">
+                            <option value="">-- No Tournament --</option>
+                        </select>
+                        <select id="manOfTheMatch">
+                            <option value="">-- Man of the Match --</option>
+                        </select>
+                    </div>
+                    <h3 style="margin-top:2rem">Player Performances</h3>
+                    <div id="performanceEntries"></div>
+                    <button type="button" id="addPerformanceBtn" style="margin-top:1rem">Add Player Performance</button>
+                    <button type="submit" id="submitMatchBtn" class="btn-success" style="margin-top:1rem;float:right">Save Match</button>
+                </form>
+            </div>
+        </div>
+        
+        <div id="h2h-stats" class="tab-pane">
+            <div class="card">
+                <h3>Select Players and Filters for Comparison</h3>
+                <div class="h2h-filters-container">
+                    <div class="h2h-filters">
+                        <div><label>Player A:</label><select id="h2hPlayerA"></select></div>
+                        <div><label>Player B:</label><select id="h2hPlayerB"></select></div>
+                        <div><label>Player C:</label><select id="h2hPlayerC"></select></div>
+                    </div>
+                    <div class="h2h-filters">
+                        <div><label>Format:</label><select id="h2hFormatFilter">
+                            <option value="">All Formats</option>
+                        </select></div>
+                        <div><label>Year:</label><select id="h2hYearFilter">
+                            <option value="">All Years</option>
+                        </select></div>
+                        <div><label>Tournament:</label><select id="h2hTournamentFilter">
+                            <option value="">All Tournaments</option>
+                        </select></div>
+                    </div>
+                </div>
+                <button id="compareBtn" style="margin-top:1rem; max-width: 200px;">Compare Careers</button>
+                <div id="h2hResults" style="margin-top: 2rem;"></div>
+            </div>
+        </div>
+
+        <div id="match-history" class="tab-pane">
+            <div class="card">
+                <h2>Match History</h2>
+                <table id="matchHistoryTable">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Format</th>
+                            <th>Tournament</th>
+                            <th>Players</th>
+                            <th>MOTM</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="tournaments" class="tab-pane">
+            <div class="card">
+                <h2>Tournaments</h2>
+                <form id="tournamentForm" style="margin-bottom: 1.5rem;">
+                    <div class="form-grid">
+                        <input type="text" id="tournamentName" placeholder="Tournament Name" required>
+                        <select id="tournamentType">
+                            <option value="team">Team Play</option>
+                            <option value="solo">Solo Play</option>
+                        </select>
+                        <input type="date" id="tournamentStartDate" title="Start Date">
+                        <input type="date" id="tournamentEndDate" title="End Date">
+                        <div id="soloPlayerSelectorContainer" class="solo-player-selector" style="display: none;">
+                            <label>Select Players:</label>
+                            <select id="soloPlayerSelector">
+                                <option value="">-- Add Player --</option>
+                            </select>
+                            <div class="solo-player-list" id="soloPlayerList"></div>
+                        </div>
+                        <div id="teamSelectorContainer" class="team-selector-container">
+                            <div class="team-selector">
+                                <label>Team 1 Players:</label>
+                                <select class="team-player-selector" data-team="1">
+                                    <option value="">-- Add Player --</option>
+                                </select>
+                                <div class="team-player-list" data-team="1"></div>
+                            </div>
+                            <div class="team-selector">
+                                <label>Team 2 Players:</label>
+                                <select class="team-player-selector" data-team="2">
+                                    <option value="">-- Add Player --</option>
+                                </select>
+                                <div class="team-player-list" data-team="2"></div>
+                            </div>
+                        </div>
+                        <button type="submit">Create Tournament</button>
+                    </div>
+                </form>
+                <table id="tournamentsTable">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Dates</th>
+                            <th>Matches</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                <div id="tournamentDetails" style="margin-top: 2rem;"></div>
+            </div>
+        </div>
+
+        <div id="leaderboard" class="tab-pane">
+            <div class="card">
+                <h2>Leaderboard</h2>
+                <div class="stats-filter">
+                    <div><label for="leaderboardFormatFilter">Format:</label><select id="leaderboardFormatFilter">
+                        <option value="">All Formats</option>
+                    </select></div>
+                    <div><label for="leaderboardYearFilter">Year:</label><select id="leaderboardYearFilter">
+                        <option value="">All Years</option>
+                    </select></div>
+                    <div><label for="leaderboardTournamentFilter">Tournament:</label><select id="leaderboardTournamentFilter">
+                        <option value="">All Tournaments</option>
+                    </select></div>
+                </div>
+                <div id="leaderboardContent"></div>
+            </div>
+        </div>
+
+        <div id="settings" class="tab-pane">
+            <div class="card">
+                <h2>Settings</h2>
+                <h3>Data Management</h3>
+                <div class="settings-actions">
+                    <button id="exportDataBtn" class="btn-warning">Export Data</button>
+                    <button id="importDataBtn" class="btn-warning">Import Data</button>
+                    <input type="file" id="importFile" accept=".json" style="display:none">
+                </div>
+                <h3 style="margin-top: 2rem;">Appearance</h3>
+                <div class="settings-actions">
+                    <button id="darkModeToggle">Toggle Dark Mode</button>
+                </div>
+                <h3 style="margin-top: 2rem;">Archive (Trash)</h3>
+                <p>Items here are deleted permanently after 3 days.</p>
+                <table id="archiveTable">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Type</th>
+                            <th>Deleted On</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div id="career-stats" class="tab-pane">
+            <div class="card">
+                <div class="stats-header">
+                    <img id="statsAvatar" src="https://www.gstatic.com/images/branding/product/1x/avatar_circle_grey_512dp.png" alt="Player Avatar">
+                    <div>
+                        <h2 id="statsPlayerName" style="border-bottom:none; margin: 0;"></h2>
+                        <div class="player-bio">
+                            <p id="statsPlayerAge"></p><p id="statsPlayerRole"></p>
+                            <p id="statsPlayerBatting"></p><p id="statsPlayerBowling"></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="badge-container" id="badgesContainer"></div>
+                <div class="recent-form" id="recentBattingForm"></div>
+                <div class="stats-filter">
+                    <div><label for="formatFilter">Format:</label><select id="formatFilter">
+                        <option value="">Overall Career</option>
+                    </select></div>
+                    <div><label for="yearFilter">Year:</label><select id="yearFilter">
+                        <option value="">All Years</option>
+                    </select></div>
+                </div>
+                <h3>Batting</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>M</th><th>I</th><th>NO</th><th>Runs</th><th>HS</th><th>Avg</th><th>BF</th><th>SR</th><th>Ducks</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td id="c_m_bat">-</td><td id="c_i_bat">-</td><td id="c_no">-</td><td id="c_runs">-</td>
+                            <td id="c_hs">-</td><td id="c_avg_bat">-</td><td id="c_bf">-</td><td id="c_sr_bat">-</td><td id="c_ducks">-</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="stats-tables-grid">
+                    <div>
+                        <h3>Milestones & Awards</h3>
+                        <table>
+                            <thead>
+                                <tr><th>25s</th><th>50s</th><th>3W</th><th>5W</th><th>Hattrick</th><th>MOTM</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td id="c_25s">-</td><td id="c_50s">-</td><td id="c_3w">-</td><td id="c_5w">-</td><td id="c_hattrick">-</td><td id="c_motm">-</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div>
+                        <h3>Fielding</h3>
+                        <table>
+                            <thead>
+                                <tr><th>Catches</th><th>Stumpings</th><th>Run Outs</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td id="c_ct">-</td><td id="c_st">-</td><td id="c_ro">-</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <h3>Bowling</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>M</th><th>I</th><th>Overs</th><th>Balls</th><th>Runs</th><th>Wkts</th><th>BBI</th><th>Avg</th><th>Econ</th><th>SR</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td id="c_m_bowl">-</td><td id="c_i_bowl">-</td><td id="c_overs">-</td><td id="c_balls_bowl">-</td>
+                            <td id="c_runs_con">-</td><td id="c_wkts">-</td><td id="c_bbi">-</td><td id="c_avg_bowl">-</td>
+                            <td id="c_econ">-</td><td id="c_sr_bowl">-</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <h3>Dismissal Analysis</h3>
+                <div id="dismissalChartContainer" style="height: 300px; margin-bottom: 2rem;">
+                    <canvas id="dismissalChart"></canvas>
+                </div>
+                <h3>Career Progression - Batting Average</h3>
+                <div style="height: 300px; margin-bottom: 2rem;">
+                    <canvas id="careerProgressionBattingChart"></canvas>
+                </div>
+                <h3>Career Progression - Bowling Average</h3>
+                <div style="height: 300px; margin-bottom: 2rem;">
+                    <canvas id="careerProgressionBowlingChart"></canvas>
+                </div>
+                <h3>Runs per Innings Chart</h3>
+                <div style="height: 300px;">
+                    <canvas id="runsChart"></canvas>
+                </div>
+
+                <h3 style="margin-top: 2rem;">Dismissals By Bowler</h3>
+                <table id="dismissedByBowlerTable">
+                    <thead>
+                        <tr><th>Bowler Name</th><th>Dismissals</th></tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+
+                <h3 style="margin-top: 2rem;">Dismissals Caught By Fielder</h3>
+                <table id="caughtByFielderTable">
+                    <thead>
+                        <tr><th>Fielder Name</th><th>Catches</th></tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+<script>
+// Initialize jsPDF (kept for other potential uses, but PDF report generation removed)
+const { jsPDF } = window.jspdf;
+document.addEventListener('DOMContentLoaded', () => {
+    // --- DOM Elements ---
+    const tabNav = document.querySelector('.tab-nav');
+    const tabPanes = document.querySelectorAll('.tab-pane');
+    const addPlayerForm = document.getElementById('addPlayerForm');
+    const submitPlayerBtn = document.getElementById('submitPlayerBtn');
+    const playerFormTitle = document.getElementById('playerFormTitle');
+    const playerListTableBody = document.querySelector('#playerListTable tbody');
+    const logMatchForm = document.getElementById('logMatchForm');
+    const submitMatchBtn = document.getElementById('submitMatchBtn');
+    const matchFormTitle = document.getElementById('matchFormTitle');
+    const addPerformanceBtn = document.getElementById('addPerformanceBtn');
+    const performanceEntries = document.getElementById('performanceEntries');
+    const manOfTheMatchSelect = document.getElementById('manOfTheMatch');
+    const matchTournamentSelect = document.getElementById('matchTournament');
+    const formatFilterSelect = document.getElementById('formatFilter');
+    const yearFilterSelect = document.getElementById('yearFilter');
+    const matchHistoryTableBody = document.querySelector('#matchHistoryTable tbody');
+    const archiveTableBody = document.querySelector('#archiveTable tbody');
+    const exportDataBtn = document.getElementById('exportDataBtn');
+    const importDataBtn = document.getElementById('importDataBtn');
+    const importFile = document.getElementById('importFile');
+    const darkModeToggle = document.getElementById('darkModeToggle');
+    const h2hPlayerASelect = document.getElementById('h2hPlayerA');
+    const h2hPlayerBSelect = document.getElementById('h2hPlayerB');
+    const h2hPlayerCSelect = document.getElementById('h2hPlayerC'); // *** MODIFICATION: Added Player C selector ***
+    const h2hFormatFilter = document.getElementById('h2hFormatFilter');
+    const h2hYearFilter = document.getElementById('h2hYearFilter');
+    const h2hTournamentFilter = document.getElementById('h2hTournamentFilter');
+    const compareBtn = document.getElementById('compareBtn');
+    const h2hResultsDiv = document.getElementById('h2hResults');
+    const runsChartCanvas = document.getElementById('runsChart');
+    const dismissalChartCanvas = document.getElementById('dismissalChart');
+    const careerProgressionBattingChartCanvas = document.getElementById('careerProgressionBattingChart');
+    const careerProgressionBowlingChartCanvas = document.getElementById('careerProgressionBowlingChart');
+    const tournamentForm = document.getElementById('tournamentForm');
+    const tournamentTypeSelect = document.getElementById('tournamentType');
+    const soloPlayerSelectorContainer = document.getElementById('soloPlayerSelectorContainer');
+    const soloPlayerSelector = document.getElementById('soloPlayerSelector');
+    const soloPlayerList = document.getElementById('soloPlayerList');
+    const teamSelectorContainer = document.getElementById('teamSelectorContainer');
+    const tournamentsTableBody = document.querySelector('#tournamentsTable tbody');
+    const tournamentDetailsDiv = document.getElementById('tournamentDetails');
+    const leaderboardFormatFilter = document.getElementById('leaderboardFormatFilter');
+    const leaderboardYearFilter = document.getElementById('leaderboardYearFilter');
+    const leaderboardTournamentFilter = document.getElementById('leaderboardTournamentFilter');
+    const leaderboardContent = document.getElementById('leaderboardContent');
+    const avatarUploadBtn = document.getElementById('avatarUploadBtn');
+    const avatarUpload = document.getElementById('avatarUpload');
+    const avatarPreview = document.getElementById('avatarPreview');
+    const dismissedByBowlerTableBody = document.querySelector('#dismissedByBowlerTable tbody');
+    const caughtByFielderTableBody = document.querySelector('#caughtByFielderTable tbody');
+    
+    let runsChart, dismissalChart, careerProgressionBattingChart, careerProgressionBowlingChart;
+    let editingPlayerId = null;
+    let editingMatchId = null;
+    let avatarBase64 = null;
+
+    let db = { 
+        players: [], 
+        matches: [], 
+        tournaments: [], 
+        trash: [],
+        achievements: [
+            { id: 'centurion', name: 'Centurion', description: 'Score a century (100+ runs)', condition: (player) => player.stats.hundreds > 0 },
+            { id: 'half-centurion', name: 'Half-Centurion', description: 'Score a half-century (50+ runs)', condition: (player) => player.stats.fifties > 0 },
+            { id: 'the-wall', name: 'The Wall', description: '3 consecutive scores of 25+ runs', condition: (player) => {
+                const last5 = player.stats.last5BattingScores;
+                for (let i = 0; i < last5.length - 2; i++) {
+                    if (last5[i] >= 25 && last5[i+1] >= 25 && last5[i+2] >= 25) return true;
+                }
+                return false;
+            }},
+            { id: 'finisher', name: 'Finisher', description: 'Score 20+ runs with SR 200+', condition: (player) => {
+                return player.stats.performances.some(p => p.runs >= 20 && p.balls > 0 && (p.runs / p.balls * 100) >= 200);
+            }},
+            { id: 'hat-trick', name: 'Hat-trick Hero', description: 'Take a hat-trick (3 wickets in 3 balls)', condition: (player) => {
+                return player.stats.performances.some(p => p.hatTrick === true);
+            }},
+            { id: 'five-fer', name: 'Five-fer', description: 'Take 5 wickets in an innings', condition: (player) => player.stats.fiveWicketHauls > 0 },
+            { id: 'three-fer', name: 'Three-fer', description: 'Take 3 wickets in an innings', condition: (player) => player.stats.threeWicketHauls > 0 },
+            { id: 'all-rounder', name: 'All-Rounder', description: 'Score 25+ runs and take 2+ wickets in same match', 
+            condition: (player) => {
+                const matchPerformances = {};
+                player.stats.performances.forEach(p => {
+                    if (!matchPerformances[p.matchId]) matchPerformances[p.matchId] = { runs: 0, wickets: 0 };
+                    matchPerformances[p.matchId].runs += p.runs || 0;
+                    matchPerformances[p.matchId].wickets += p.wkts || 0;
+                });
+                return Object.values(matchPerformances).some(m => m.runs >= 25 && m.wickets >= 2);
+            }},
+            { id: 'miser', name: 'Miser', description: 'Economy rate under 3 in an innings (min 2 overs)', condition: (player) => {
+                return player.stats.performances.some(p => {
+                    const balls = parseOversToBalls(p.overs);
+                    return balls >= 12 && p.runsCon && (p.runsCon / (balls / 6)) < 3;
+                });
+            }},
+            { id: 'safe-hands', name: 'Safe Hands', description: 'Take 3 catches in a match', condition: (player) => {
+                const matchCatches = {};
+                player.stats.performances.forEach(p => {
+                    if (!matchCatches[p.matchId]) matchCatches[p.matchId] = 0;
+                    matchCatches[p.matchId] += p.catches || 0;
+                });
+                return Object.values(matchCatches).some(c => c >= 3);
+            }},
+            { id: 'duck', name: 'Duck', description: 'Get out for 0 runs', condition: (player) => player.stats.ducks > 0 }
+        ]
+    };
+    let currentStatsPlayerId = null;
+
+    // --- INITIALIZATION ---
+    loadData();
+    if (localStorage.getItem('darkMode') === 'enabled') document.body.classList.add('dark-mode');
+    // --- EVENT LISTENERS ---
+    tabNav.addEventListener('click', handleTabSwitch);
+    addPlayerForm.addEventListener('submit', handleAddPlayer);
+    playerListTableBody.addEventListener('click', handlePlayerListClick);
+    addPerformanceBtn.addEventListener('click', addPerformanceRow);
+    logMatchForm.addEventListener('submit', handleLogMatch);
+    formatFilterSelect.addEventListener('change', handleFilterChange);
+    yearFilterSelect.addEventListener('change', handleFilterChange);
+    matchHistoryTableBody.addEventListener('click', handleMatchHistoryClick);
+    archiveTableBody.addEventListener('click', handleArchiveClick);
+    exportDataBtn.addEventListener('click', exportData);
+    importDataBtn.addEventListener('click', () => importFile.click());
+    importFile.addEventListener('change', importData);
+    darkModeToggle.addEventListener('click', toggleDarkMode);
+    compareBtn.addEventListener('click', displayH2HStats);
+    // *** MODIFICATION: Added Player C to the list of event listeners ***
+    [h2hPlayerASelect, h2hPlayerBSelect, h2hPlayerCSelect, h2hFormatFilter, h2hYearFilter, h2hTournamentFilter].forEach(el => {
+        el.addEventListener('change', displayH2HStats);
+    });
+    tournamentForm.addEventListener('submit', handleTournamentForm);
+    tournamentTypeSelect.addEventListener('change', toggleTournamentType);
+    soloPlayerSelector.addEventListener('change', addSoloPlayerToTournament);
+    leaderboardFormatFilter.addEventListener('change', updateLeaderboard);
+    leaderboardYearFilter.addEventListener('change', updateLeaderboard);
+    leaderboardTournamentFilter.addEventListener('change', updateLeaderboard);
+    avatarUploadBtn.addEventListener('click', () => avatarUpload.click());
+    avatarUpload.addEventListener('change', handleAvatarUpload);
+    // --- TAB SWITCHING ---
+    function switchTab(targetTabId) {
+        if (targetTabId === 'h2h-stats') {
+            populateH2HDropdowns();
+            displayH2HStats();
+        }
+        if (targetTabId === 'log-match') {
+            populateMOTMSelect();
+            populateTournamentSelect();
+            if (performanceEntries.querySelectorAll('.performance-row').length === 0) addPerformanceRow();
+        }
+        if (targetTabId === 'tournaments') renderTournamentsTable();
+        if (targetTabId === 'leaderboard') {
+            populateLeaderboardFilters();
+            updateLeaderboard();
+        }
+        
+        tabPanes.forEach(pane => pane.classList.remove('active'));
+        document.getElementById(targetTabId)?.classList.add('active');
+        tabNav.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+        const targetButton = tabNav.querySelector(`[data-tab='${targetTabId}']`);
+        if (targetButton) targetButton.classList.add('active');
+    }
+    function handleTabSwitch(e) {
+        const tabButton = e.target.closest('.tab-button');
+        if (!tabButton) return;
+        switchTab(tabButton.dataset.tab);
+    }
+    
+    // --- DARK MODE ---
+    function toggleDarkMode() {
+        document.body.classList.toggle('dark-mode');
+        localStorage.setItem('darkMode', document.body.classList.contains('dark-mode') ? 'enabled' : 'disabled');
+    }
+
+    // --- AVATAR UPLOAD ---
+    function handleAvatarUpload(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            avatarBase64 = event.target.result;
+            avatarPreview.src = avatarBase64;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // --- DATA HANDLING ---
+    function saveData() {
+        localStorage.setItem('cricketAppDb', JSON.stringify(db));
+    }
+    function loadData() {
+        const storedDb = localStorage.getItem('cricketAppDb');
+        if (storedDb) {
+            db = JSON.parse(storedDb);
+            if (!db.tournaments) db.tournaments = [];
+            if (!db.achievements) db.achievements = []; // Fallback for older data
+            if (!db.trash) db.trash = [];
+            const defaultAchievements = [
+                { id: 'centurion', name: 'Centurion', description: 'Score a century (100+ runs)', condition: (player) => player.stats.hundreds > 0 },
+                { id: 'half-centurion', name: 'Half-Centurion', description: 'Score a half-century (50+ runs)', condition: (player) => player.stats.fifties > 0 },
+                { id: 'the-wall', name: 'The Wall', description: '3 consecutive scores of 25+ runs', condition: (player) => {
+                    const last5 = player.stats.last5BattingScores;
+                    for (let i = 0; i < last5.length - 2; i++) {
+                        if (last5[i] >= 25 && last5[i+1] >= 25 && last5[i+2] >= 25) return true;
+                    }
+                    return false;
+                }},
+                { id: 'finisher', name: 'Finisher', description: 'Score 20+ runs with SR 200+', condition: (player) => {
+                    return player.stats.performances.some(p => p.runs >= 20 && p.balls > 0 && (p.runs / p.balls * 100) >= 200);
+                }},
+                { id: 'hat-trick', name: 'Hat-trick Hero', description: 'Take a hat-trick (3 wickets in 3 balls)', condition: (player) => {
+                    return player.stats.performances.some(p => p.hatTrick === true);
+                }},
+                { id: 'five-fer', name: 'Five-fer', description: 'Take 5 wickets in an innings', condition: (player) => player.stats.fiveWicketHauls > 0 },
+                { id: 'three-fer', name: 'Three-fer', description: 'Take 3 wickets in an innings', condition: (player) => player.stats.threeWicketHauls > 0 },
+                { id: 'all-rounder', name: 'All-Rounder', description: 'Score 25+ runs and take 2+ wickets in same match', 
+                condition: (player) => {
+                    const matchPerformances = {};
+                    player.stats.performances.forEach(p => {
+                        if (!matchPerformances[p.matchId]) matchPerformances[p.matchId] = { runs: 0, wickets: 0 };
+                        matchPerformances[p.matchId].runs += p.runs || 0;
+                        matchPerformances[p.matchId].wickets += p.wkts || 0;
+                    });
+                    return Object.values(matchPerformances).some(m => m.runs >= 25 && m.wickets >= 2);
+                }},
+                { id: 'miser', name: 'Miser', description: 'Economy rate under 3 in an innings (min 2 overs)', condition: (player) => {
+                    return player.stats.performances.some(p => {
+                        const balls = parseOversToBalls(p.overs);
+                        return balls >= 12 && p.runsCon && (p.runsCon / (balls / 6)) < 3;
+                    });
+                }},
+                { id: 'safe-hands', name: 'Safe Hands', description: 'Take 3 catches in a match', condition: (player) => {
+                    const matchCatches = {};
+                    player.stats.performances.forEach(p => {
+                        if (!matchCatches[p.matchId]) matchCatches[p.matchId] = 0;
+                        matchCatches[p.matchId] += p.catches || 0;
+                    });
+                    return Object.values(matchCatches).some(c => c >= 3);
+                }},
+                { id: 'duck', name: 'Duck', description: 'Get out for 0 runs', condition: (player) => player.stats.ducks > 0 }
+            ];
+            db.achievements = [...defaultAchievements, ...db.achievements.filter(a => !defaultAchievements.some(d => d.id === a.id))];
+        }
+        db.players.forEach(player => {
+            if (!player.achievements) player.achievements = [];
+        });
+        purgeOldTrash();
+        renderAll();
+    }
+    function renderAll() {
+        renderPlayerList();
+        renderMatchHistory();
+        renderArchive();
+        updateAllPlayerDropdowns();
+        populateTournamentSelect();
+    }
+
+    async function exportData() {
+        if (db.players.length === 0 && db.matches.length === 0) {
+            alert("No data to export.");
+            return;
+        }
+
+        const dataStr = JSON.stringify(db, null, 2);
+        const dataBlob = new Blob([dataStr], { type: "application/json" });
+        const suggestedName = `cricket_stats_backup_${new Date().toISOString().slice(0, 10)}.json`;
+
+        if (window.showSaveFilePicker && window.isSecureContext) {
+            try {
+                const handle = await window.showSaveFilePicker({
+                    suggestedName: suggestedName,
+                    types: [{
+                        description: 'JSON file',
+                        accept: { 'application/json': ['.json'] },
+                    }],
+                });
+                const writable = await handle.createWritable();
+                await writable.write(dataBlob);
+                await writable.close();
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    console.error("Could not save file:", err);
+                    alert("File could not be saved. The download will start automatically as a fallback.");
+                    fallbackExport(dataBlob, suggestedName);
+                }
+            }
+        } else {
+            fallbackExport(dataBlob, suggestedName);
+        }
+    }
+    
+    function fallbackExport(blob, name) {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = name;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
+
+    function importData(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const importedDb = JSON.parse(e.target.result);
+                if (importedDb && Array.isArray(importedDb.players) && Array.isArray(importedDb.matches)) {
+                    if (confirm("This will overwrite all current data. Are you sure?")) {
+                        db = importedDb;
+                        if(!db.trash) db.trash = [];
+                        if(!db.tournaments) db.tournaments = [];
+                        db.players.forEach(player => {
+                            if (!player.achievements) player.achievements = [];
+                        });
+                        saveData();
+                        renderAll();
+                        if (currentStatsPlayerId) {
+                            openStatsPage(currentStatsPlayerId); 
+                        } else {
+                            switchTab('home'); 
+                        }
+                        alert("Data imported successfully!");
+                    }
+                } else {
+                    alert("Invalid data file format.");
+                }
+            } catch (error) {
+                alert("Error reading file.");
+            }
+        };
+        reader.readAsText(file);
+        event.target.value = '';
+    }
+
+    // --- PLAYER MANAGEMENT ---
+    function handleAddPlayer(e) {
+        e.preventDefault();
+        const playerName = document.getElementById('playerName').value.trim() || 'Unnamed Player';
+        
+        if (editingPlayerId) {
+            const player = db.players.find(p => p.id === editingPlayerId);
+            if (player) {
+                player.name = playerName;
+                player.role = document.getElementById('playerRole').value.trim();
+                player.battingStyle = document.getElementById('battingStyle').value.trim();
+                player.bowlingStyle = document.getElementById('bowlingStyle').value.trim();
+                player.dob = document.getElementById('playerDob').value;
+                if (avatarBase64) {
+                    player.avatarUrl = avatarBase64;
+                }
+                
+                if (currentStatsPlayerId === player.id) {
+                    calculateAndDisplayStats(player.id, formatFilterSelect.value, yearFilterSelect.value);
+                }
+            }
+        } else {
+            const playerData = {
+                id: Date.now(),
+                name: playerName,
+                role: document.getElementById('playerRole').value.trim(),
+                battingStyle: document.getElementById('battingStyle').value.trim(),
+                bowlingStyle: document.getElementById('bowlingStyle').value.trim(),
+                dob: document.getElementById('playerDob').value,
+                achievements: [],
+                avatarUrl: avatarBase64 || null
+            };
+            db.players.push(playerData);
+        }
+
+        saveData();
+        renderPlayerList();
+        addPlayerForm.reset();
+        updateAllPlayerDropdowns();
+        
+        editingPlayerId = null;
+        playerFormTitle.textContent = 'Add New Player';
+        submitPlayerBtn.textContent = 'Add Player';
+        avatarBase64 = null;
+        avatarPreview.src = 'https://www.gstatic.com/images/branding/product/1x/avatar_circle_grey_512dp.png';
+    }
+    function renderPlayerList() {
+        playerListTableBody.innerHTML = '';
+        const defaultAvatar = 'https://www.gstatic.com/images/branding/product/1x/avatar_circle_grey_512dp.png';
+        db.players.forEach(player => {
+            const stats = getPlayerStats(player.id, {});
+            const last5Scores = stats.last5BattingScores.map(score => score === null ? 'DNB' : score);
+            const last5Wickets = stats.last5BowlingFigures.map(fig => fig === null ? 'DNB' : fig);
+            
+            const row = document.createElement('tr');
+            row.innerHTML = `<td><img src="${player.avatarUrl || defaultAvatar}" alt="Avatar"></td>
+                <td>${player.name}</td>
+                <td>
+                    <div><strong>Bat:</strong> ${last5Scores.slice(0, 5).join(', ')}</div>
+                    <div><strong>Bowl:</strong> ${last5Wickets.slice(0, 5).join(', ')}</div>
+                </td>
+                <td>${player.role || '-'}</td>
+                <td>
+                    <button class="btn-small" data-player-id="${player.id}" data-action="view-stats">View Stats</button>
+                    <button class="btn-small" data-player-id="${player.id}" data-action="edit-player">Edit</button>
+                    <button class="btn-small btn-danger" data-player-id="${player.id}" data-action="delete-player">Delete</button>
+                </td>`;
+            playerListTableBody.appendChild(row);
+        });
+    }
+    function handlePlayerListClick(e) {
+        const targetButton = e.target.closest('button');
+        if (!targetButton) return;
+        const { action, playerId } = targetButton.dataset;
+        const id = parseInt(playerId);
+        if (action === 'view-stats') {
+            openStatsPage(id);
+        } else if (action === 'edit-player') {
+            const player = db.players.find(p => p.id === id);
+            if (player) {
+                playerFormTitle.textContent = `Editing ${player.name}`;
+                document.getElementById('playerName').value = player.name;
+                document.getElementById('playerDob').value = player.dob || '';
+                document.getElementById('playerRole').value = player.role || '';
+                document.getElementById('battingStyle').value = player.battingStyle || '';
+                document.getElementById('bowlingStyle').value = player.bowlingStyle || '';
+                
+                avatarBase64 = player.avatarUrl || null;
+                avatarPreview.src = player.avatarUrl || 'https://www.gstatic.com/images/branding/product/1x/avatar_circle_grey_512dp.png';
+                
+                editingPlayerId = id;
+                submitPlayerBtn.textContent = 'Update Player';
+                window.scrollTo(0, 0);
+            }
+        } else if (action === 'delete-player') {
+            if (confirm('Are you sure? This will move the player to the Archive.')) deleteToArchive('player', id);
+        }
+    }
+    function updateAllPlayerDropdowns() {
+        populateH2HDropdowns();
+        populateMOTMSelect();
+        populateSoloPlayerSelector();
+        populateTeamPlayerSelectors();
+    }
+    
+    function populateTeamPlayerSelectors() {
+        const teamSelectors = document.querySelectorAll('.team-player-selector');
+        teamSelectors.forEach(selector => {
+            selector.innerHTML = '<option value="">-- Add Player --</option>';
+            db.players.forEach(p => {
+                selector.innerHTML += `<option value="${p.id}">${p.name}</option>`;
+            });
+            selector.onchange = function() { 
+                const playerId = parseInt(this.value);
+                const team = this.dataset.team;
+                if (!playerId) return;
+                
+                const player = db.players.find(p => p.id === playerId);
+                if (!player) return;
+                
+                if (document.querySelector(`.team-player-tag[data-player-id="${playerId}"][data-team="${team}"]`)) {
+                    this.value = '';
+                    return;
+                }
+                
+                const playerTag = document.createElement('div');
+                playerTag.className = 'team-player-tag';
+                playerTag.dataset.playerId = playerId;
+                playerTag.dataset.team = team;
+                playerTag.innerHTML = `${player.name} <button data-action="remove-team-player">&times;</button>`;
+                
+                document.querySelector(`.team-player-list[data-team="${team}"]`).appendChild(playerTag);
+                this.value = '';
+                
+                playerTag.querySelector('button').addEventListener('click', () => playerTag.remove());
+            };
+        });
+    }
+
+    // --- MATCH LOGGING & HISTORY ---
+    function populateMOTMSelect() {
+        const currentSelection = manOfTheMatchSelect.value;
+        manOfTheMatchSelect.innerHTML = '<option value="">-- Man of the Match --</option>';
+        db.players.forEach(player => {
+            manOfTheMatchSelect.innerHTML += `<option value="${player.id}">${player.name}</option>`;
+        });
+        manOfTheMatchSelect.value = currentSelection;
+    }
+    function populateTournamentSelect() {
+        const currentSelection = matchTournamentSelect.value;
+        matchTournamentSelect.innerHTML = '<option value="">-- No Tournament --</option>';
+        db.tournaments.forEach(tournament => {
+            matchTournamentSelect.innerHTML += `<option value="${tournament.id}">${tournament.name}</option>`;
+        });
+        matchTournamentSelect.value = currentSelection;
+    }
+    function addPerformanceRow() {
+        if (db.players.length === 0) {
+             if (performanceEntries.children.length === 0) alert('Add a player on the "Home" tab first.');
+            return;
+        }
+        const row = document.createElement('div');
+        row.className = 'performance-row';
+        const playerOptions = db.players.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+        row.innerHTML = `<div class="performance-row-header"><select data-field="playerId">${playerOptions}</select></div>
+            <div class="perf-stats-grid">
+                <div class="perf-group"><h4>Batting</h4>
+                    <div class="input-pair"><label>Did Not Bat:</label><input type="checkbox" data-field="dnbBat"></div>
+                    <div class="input-pair"><label>Runs:</label><input type="number" min="0" placeholder="R" data-field="runs"></div>
+                    <div class="input-pair"><label>Balls:</label><input type="number" min="0" placeholder="B" data-field="balls"></div>
+                    <div class="input-pair"><label>4s:</label><input type="number" min="0" placeholder="4s" data-field="fours"></div>
+                    <div class="input-pair"><label>6s:</label><input type="number" min="0" placeholder="6s" data-field="sixes"></div>
+                    <div class="input-pair"><label>Out?</label><select data-field="out"><option value="no">No</option><option value="yes">Yes</option></select></div>
+                    <div class="input-pair out-details" style="display:none"><label>Dismissal:</label><select data-field="dismissalType"><option value="bowled">Bowled</option><option value="caught">Caught</option><option value="lbw">LBW</option><option value="run out">Run Out</option><option value="stumped">Stumped</option><option value="hit wicket">Hit Wicket</option><option value="other">Other</option></select></div>
+                    <div class="input-pair out-details" style="display:none"><label>Bowler:</label><select data-field="bowlerName"><option value="">-- Select Bowler --</option>${db.players.map(p => `<option value="${p.name}">${p.name}</option>`).join('')}</select></div>
+                    <div class="input-pair out-details" style="display:none"><label>Fielder:</label><select data-field="fielderName"><option value="">-- Select Fielder --</option>${db.players.map(p => `<option value="${p.name}">${p.name}</option>`).join('')}</select></div>
+                </div>
+                <div class="perf-group"><h4>Bowling</h4>
+                    <div class="input-pair"><label>Did Not Bowl:</label><input type="checkbox" data-field="dnbBowl"></div>
+                    <div class="input-pair"><label>Overs:</label><input type="text" placeholder="e.g. 4.0" data-field="overs"></div>
+                    <div class="input-pair"><label>Runs Con:</label><input type="number" min="0" placeholder="R" data-field="runsCon"></div>
+                    <div class="input-pair"><label>Wickets:</label><input type="number" min="0" placeholder="W" data-field="wkts"></div>
+                    <div class="input-pair"><label>Hat-trick?</label><input type="checkbox" data-field="hatTrick"></div>
+                </div>
+                <div class="perf-group"><h4>Fielding</h4>
+                    <div class="input-pair"><label>Catches:</label><input type="number" min="0" placeholder="Ct" data-field="catches"></div>
+                    <div class="input-pair"><label>Stumpings:</label><input type="number" min="0" placeholder="St" data-field="stumpings"></div>
+                    <div class="input-pair"><label>Run Outs:</label><input type="number" min="0" placeholder="RO" data-field="runOuts"></div>
+                </div>
+            </div>
+            <button type="button" class="btn-danger" data-action="remove-performance" style="margin-top: 1rem;">Remove</button>`;
+
+        const outSelect = row.querySelector('[data-field="out"]');
+        outSelect.addEventListener('change', function() {
+            row.querySelectorAll('.out-details').forEach(el => el.style.display = this.value === 'yes' ? 'grid' : 'none');
+        });
+        row.querySelector('[data-action="remove-performance"]').addEventListener('click', () => row.remove());
+        performanceEntries.appendChild(row);
+    }
+    function handleLogMatch(e) {
+        e.preventDefault();
+        const performances = [];
+        performanceEntries.querySelectorAll('.performance-row').forEach(row => {
+            const performanceData = {}; 
+            row.querySelectorAll('[data-field]').forEach(input => {
+                const field = input.dataset.field;
+                if (input.type === 'checkbox') performanceData[field] = input.checked;
+                else if (input.type === 'number' || field === 'playerId') performanceData[field] = parseInt(input.value) || 0;
+                else performanceData[field] = input.value;
+            });
+            performances.push(performanceData);
+        });
+        if (performances.length === 0) return alert('A match needs at least one performance.');
+        
+        const matchData = {
+            id: editingMatchId || Date.now(),
+            date: document.getElementById('matchDate').value,
+            format: document.getElementById('matchFormat').value,
+            tournamentId: matchTournamentSelect.value ? parseInt(matchTournamentSelect.value) : null,
+            motmPlayerId: parseInt(manOfTheMatchSelect.value) || null,
+            performances: performances.map(p => ({ ...p, matchId: editingMatchId || Date.now() }))
+        };
+
+        if (editingMatchId) {
+            const matchIndex = db.matches.findIndex(m => m.id === editingMatchId);
+            if (matchIndex !== -1) db.matches[matchIndex] = matchData;
+        } else {
+            db.matches.push(matchData);
+        }
+        
+        saveData();
+        logMatchForm.reset();
+        performanceEntries.innerHTML = '';
+        addPerformanceRow();
+        alert('Match saved successfully!');
+        renderMatchHistory();
+        
+        updateAllPlayerDropdowns();
+        checkForNewAchievements();
+
+        editingMatchId = null;
+        matchFormTitle.textContent = 'Log a New Match';
+        submitMatchBtn.textContent = 'Save Match';
+    }
+    function renderMatchHistory() {
+        matchHistoryTableBody.innerHTML = '';
+        [...db.matches].sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(match => {
+            const playerNames = match.performances.map(p => db.players.find(pl => pl.id === p.playerId)?.name || 'N/A').join(', ');
+            const motm = db.players.find(pl => pl.id === match.motmPlayerId)?.name || '-';
+            const tournament = match.tournamentId ? db.tournaments.find(t => t.id === match.tournamentId)?.name : '-';
+            const row = document.createElement('tr');
+            row.innerHTML = `<td>${match.date}</td><td>${match.format}</td>
+                <td>${tournament}</td><td>${playerNames}</td><td>${motm}</td>
+                <td>
+                    <button class="btn-small" data-match-id="${match.id}" data-action="edit-match">Edit</button>
+                    <button class="btn-small btn-danger" data-match-id="${match.id}" data-action="delete-match">Delete</button>
+                </td>`;
+            matchHistoryTableBody.appendChild(row);
+        });
+    }
+    function handleMatchHistoryClick(e) {
+        const targetButton = e.target.closest('button');
+        if (!targetButton) return;
+        const { action, matchId } = targetButton.dataset;
+        const id = parseInt(matchId);
+        if (action === 'delete-match') {
+            if (confirm('Are you sure? This will move the match to the Archive.')) {
+                deleteToArchive('match', id);
+            }
+        } else if (action === 'edit-match') {
+            const match = db.matches.find(m => m.id === id);
+            if (match) {
+                matchFormTitle.textContent = `Editing Match from ${match.date}`;
+                document.getElementById('matchDate').value = match.date;
+                document.getElementById('matchFormat').value = match.format;
+                matchTournamentSelect.value = match.tournamentId || '';
+                manOfTheMatchSelect.value = match.motmPlayerId || '';
+                performanceEntries.innerHTML = '';
+
+                match.performances.forEach(perf => {
+                    addPerformanceRow();
+                    const lastRow = performanceEntries.lastChild;
+                    lastRow.querySelector('[data-field="playerId"]').value = perf.playerId;
+                    lastRow.querySelector('[data-field="dnbBat"]').checked = perf.dnbBat || false;
+                    lastRow.querySelector('[data-field="runs"]').value = perf.runs || '';
+                    lastRow.querySelector('[data-field="balls"]').value = perf.balls || '';
+                    lastRow.querySelector('[data-field="fours"]').value = perf.fours || '';
+                    lastRow.querySelector('[data-field="sixes"]').value = perf.sixes || '';
+                    lastRow.querySelector('[data-field="out"]').value = perf.out || 'no';
+                    lastRow.querySelector('[data-field="out"]').dispatchEvent(new Event('change'));
+                    if (perf.out === 'yes') {
+                        lastRow.querySelector('[data-field="dismissalType"]').value = perf.dismissalType || 'bowled';
+                        lastRow.querySelector('[data-field="bowlerName"]').value = perf.bowlerName || '';
+                        lastRow.querySelector('[data-field="fielderName"]').value = perf.fielderName || '';
+                    }
+                    lastRow.querySelector('[data-field="dnbBowl"]').checked = perf.dnbBowl || false;
+                    lastRow.querySelector('[data-field="overs"]').value = perf.overs || '';
+                    lastRow.querySelector('[data-field="runsCon"]').value = perf.runsCon || '';
+                    lastRow.querySelector('[data-field="wkts"]').value = perf.wkts || '';
+                    lastRow.querySelector('[data-field="hatTrick"]').checked = perf.hatTrick || false;
+                    lastRow.querySelector('[data-field="catches"]').value = perf.catches || '';
+                    lastRow.querySelector('[data-field="stumpings"]').value = perf.stumpings || '';
+                    lastRow.querySelector('[data-field="runOuts"]').value = perf.runOuts || '';
+                });
+                editingMatchId = id;
+                submitMatchBtn.textContent = 'Update Match';
+                switchTab('log-match');
+            }
+        }
+    }
+
+    // --- TOURNAMENTS ---
+    function toggleTournamentType() {
+        const type = tournamentTypeSelect.value;
+        soloPlayerSelectorContainer.style.display = type === 'solo' ? 'block' : 'none';
+        teamSelectorContainer.style.display = type === 'team' ? 'block' : 'none';
+    }
+    function populateSoloPlayerSelector() {
+        const currentVal = soloPlayerSelector.value;
+        soloPlayerSelector.innerHTML = '<option value="">-- Add Player --</option>';
+        db.players.forEach(p => {
+            soloPlayerSelector.innerHTML += `<option value="${p.id}">${p.name}</option>`;
+        });
+        soloPlayerSelector.value = currentVal;
+    }
+    function addSoloPlayerToTournament() {
+        const playerId = parseInt(soloPlayerSelector.value);
+        if (!playerId) return;
+        
+        const player = db.players.find(p => p.id === playerId);
+        if (!player) return;
+        if (document.querySelector(`.solo-player-tag[data-player-id="${playerId}"]`)) {
+            soloPlayerSelector.value = '';
+            return;
+        }
+        
+        const playerTag = document.createElement('div');
+        playerTag.className = 'solo-player-tag';
+        playerTag.dataset.playerId = playerId;
+        playerTag.innerHTML = `${player.name} <button data-action="remove-solo-player">&times;</button>`;
+        
+        soloPlayerList.appendChild(playerTag);
+        soloPlayerSelector.value = '';
+        playerTag.querySelector('button').addEventListener('click', () => playerTag.remove());
+    }
+    function handleTournamentForm(e) {
+        e.preventDefault();
+        
+        const tournamentData = {
+            id: Date.now(),
+            name: document.getElementById('tournamentName').value.trim(),
+            type: tournamentTypeSelect.value,
+            startDate: document.getElementById('tournamentStartDate').value,
+            endDate: document.getElementById('tournamentEndDate').value
+        };
+        if (tournamentData.type === 'solo') {
+            tournamentData.participants = Array.from(soloPlayerList.querySelectorAll('.solo-player-tag')).map(tag => parseInt(tag.dataset.playerId));
+        } else if (tournamentData.type === 'team') {
+            tournamentData.teams = [
+                { id: 1, players: Array.from(document.querySelectorAll('.team-player-tag[data-team="1"]')).map(tag => parseInt(tag.dataset.playerId)) },
+                { id: 2, players: Array.from(document.querySelectorAll('.team-player-tag[data-team="2"]')).map(tag => parseInt(tag.dataset.playerId)) }
+            ];
+        }
+        
+        db.tournaments.push(tournamentData);
+        saveData();
+        tournamentForm.reset();
+        soloPlayerList.innerHTML = '';
+        document.querySelectorAll('.team-player-list').forEach(list => list.innerHTML = '');
+        renderTournamentsTable();
+        populateTournamentSelect();
+    }
+    function renderTournamentsTable() {
+        tournamentsTableBody.innerHTML = '';
+        db.tournaments.forEach(tournament => {
+            const matchesInTournament = db.matches.filter(m => m.tournamentId === tournament.id).length;
+            const row = document.createElement('tr');
+            row.innerHTML = `<td>${tournament.name}</td>
+                <td>${tournament.type === 'solo' ? 'Solo Play' : 'Team Play'}</td>
+                <td>${tournament.startDate || 'N/A'} to ${tournament.endDate || 'N/A'}</td>
+                <td>${matchesInTournament}</td>
+                <td>
+                    <button class="btn-small" data-tournament-id="${tournament.id}" data-action="view-tournament">View</button>
+                    <button class="btn-small btn-danger" data-tournament-id="${tournament.id}" data-action="delete-tournament">Delete</button>
+                </td>`;
+            tournamentsTableBody.appendChild(row);
+        });
+        
+        tournamentsTableBody.querySelectorAll('[data-action="view-tournament"]').forEach(btn => {
+            btn.addEventListener('click', () => showTournamentDetails(parseInt(btn.dataset.tournamentId)));
+        });
+        tournamentsTableBody.querySelectorAll('[data-action="delete-tournament"]').forEach(btn => {
+            btn.addEventListener('click', function() {
+                if (confirm('Delete this tournament? This will not delete the matches, just remove the tournament association.')) {
+                    const tournamentId = parseInt(this.dataset.tournamentId);
+                    db.matches.forEach(match => {
+                        if (match.tournamentId === tournamentId) match.tournamentId = null;
+                    });
+                    db.tournaments = db.tournaments.filter(t => t.id !== tournamentId);
+                    saveData();
+                    renderTournamentsTable();
+                    populateTournamentSelect();
+                    tournamentDetailsDiv.innerHTML = '';
+                    populateLeaderboardFilters();
+                    updateLeaderboard();
+                }
+            });
+        });
+    }
+    function showTournamentDetails(tournamentId) {
+        const tournament = db.tournaments.find(t => t.id === tournamentId);
+        if (!tournament) return;
+        
+        const matches = db.matches.filter(m => m.tournamentId === tournamentId)
+            .sort((a, b) => new Date(a.date) - new Date(b.date));
+        
+        const playerStats = {};
+        matches.forEach(match => {
+            match.performances.forEach(perf => {
+                if (!playerStats[perf.playerId]) {
+                    playerStats[perf.playerId] = { playerId: perf.playerId, runs: 0, wickets: 0, matches: new Set(), highestScore: 0, bestBowling: { wickets: 0, runs: Infinity }, inningsBat: 0, notOuts: 0, ballsFaced: 0, inningsBowl: 0, ballsBowled: 0, runsConceded: 0, hatTricks: 0 };
+                }
+                const stats = playerStats[perf.playerId];
+                if (!perf.dnbBat) {
+                    stats.inningsBat++;
+                    stats.runs += perf.runs || 0;
+                    if ((perf.runs || 0) > stats.highestScore) stats.highestScore = perf.runs || 0;
+                    if (perf.out === 'no') stats.notOuts++;
+                    stats.ballsFaced += perf.balls || 0;
+                }
+                if (!perf.dnbBowl && perf.overs) {
+                    stats.inningsBowl++;
+                    const balls = parseOversToBalls(perf.overs);
+                    stats.ballsBowled += balls;
+                    stats.runsConceded += perf.runsCon || 0;
+                    const wkts = perf.wkts || 0;
+                    stats.wickets += wkts;
+                    if (wkts > stats.bestBowling.wickets || (wkts === stats.bestBowling.wickets && (perf.runsCon || 0) < stats.bestBowling.runs)) {
+                        stats.bestBowling = { wickets: wkts, runs: perf.runsCon || 0 };
+                    }
+                    if (perf.hatTrick) stats.hatTricks++;
+                }
+                stats.matches.add(match.id);
+            });
+        });
+        
+        const leaderboard = Object.values(playerStats).map(stats => {
+            const player = db.players.find(p => p.id === stats.playerId);
+            const timesOut = stats.inningsBat - stats.notOuts;
+            return {
+                ...stats,
+                playerName: player?.name || 'Unknown',
+                matches: stats.matches.size,
+                battingAvg: timesOut > 0 ? (stats.runs / timesOut).toFixed(2) : '∞',
+                battingSR: stats.ballsFaced > 0 ? (stats.runs / stats.ballsFaced * 100).toFixed(2) : '0.00',
+                bowlingAvg: stats.wickets > 0 ? (stats.runsConceded / stats.wickets).toFixed(2) : '–',
+                economy: stats.ballsBowled > 0 ? (stats.runsConceded / (stats.ballsBowled / 6)).toFixed(2) : '0.00',
+                bestBowlingText: stats.bestBowling.wickets > 0 ? `${stats.bestBowling.wickets}/${stats.bestBowling.runs}` : '-',
+            };
+        }).sort((a, b) => b.runs - a.runs); 
+        
+        let html = `<h3>${tournament.name}</h3>`;
+        html += `<h4 style="margin-top: 2rem;">Top Run Scorers</h4>
+            <table class="leaderboard-table">
+                <thead><tr><th>#</th><th>Player</th><th>M</th><th>I</th><th>Runs</th><th>HS</th><th>Avg</th><th>SR</th></tr></thead>
+                <tbody>`;
+        leaderboard.sort((a, b) => b.runs - a.runs).forEach((p, i) => {
+            html += `<tr><td>${i + 1}</td><td>${p.playerName}</td><td>${p.matches}</td><td>${p.inningsBat}</td><td>${p.runs}</td><td>${p.highestScore}</td><td>${p.battingAvg}</td><td>${p.battingSR}</td></tr>`;
+        });
+        html += `</tbody></table>
+            <h4 style="margin-top: 2rem;">Top Wicket Takers</h4>
+            <table class="leaderboard-table">
+                <thead><tr><th>#</th><th>Player</th><th>M</th><th>I</th><th>Wkts</th><th>Best</th><th>Avg</th><th>Econ</th></tr></thead>
+                <tbody>`;
+        leaderboard.sort((a, b) => b.wickets - a.wickets).forEach((p, i) => {
+            html += `<tr><td>${i + 1}</td><td>${p.playerName}</td><td>${p.matches}</td><td>${p.inningsBowl}</td><td>${p.wickets}</td><td>${p.bestBowlingText}</td><td>${p.bowlingAvg}</td><td>${p.economy}</td></tr>`;
+        });
+        html += `</tbody></table>`;
+        tournamentDetailsDiv.innerHTML = html;
+    }
+
+    // --- LEADERBOARD ---
+    function populateLeaderboardFilters() {
+        const formatOptions = new Set(db.matches.map(m => m.format));
+        populateOptions(leaderboardFormatFilter, formatOptions, 'All Formats');
+        
+        const yearOptions = new Set(db.matches.map(m => m.date ? new Date(m.date).getFullYear() : null));
+        populateOptions(leaderboardYearFilter, yearOptions, 'All Years', true);
+        
+        const tournamentOptions = new Map(db.tournaments.map(t => [t.id, t.name]));
+        populateOptions(leaderboardTournamentFilter, new Set([...tournamentOptions.values()]), 'All Tournaments');
+    }
+
+    function updateLeaderboard() {
+        const format = leaderboardFormatFilter.value;
+        const year = leaderboardYearFilter.value;
+        const tournamentName = leaderboardTournamentFilter.value;
+        
+        let filteredMatches = db.matches;
+        if (format) filteredMatches = filteredMatches.filter(m => m.format === format);
+        if (year) filteredMatches = filteredMatches.filter(m => m.date && new Date(m.date).getFullYear() == year);
+        if (tournamentName) {
+            const tournament = db.tournaments.find(t => t.name === tournamentName);
+            if(tournament) filteredMatches = filteredMatches.filter(m => m.tournamentId === tournament.id);
+        }
+
+        if (filteredMatches.length === 0) {
+            leaderboardContent.innerHTML = '<p>No matching data found for the selected filters.</p>';
+            return;
+        }
+
+        const playerStats = {};
+        db.players.forEach(player => {
+            playerStats[player.id] = getPlayerStats(player.id, { format, year, tournament: tournamentName });
+            playerStats[player.id].name = player.name;
+        });
+
+        const leaderboardData = Object.values(playerStats).filter(p => p.matches > 0);
+
+        let html = '<div class="stats-tables-grid">';
+
+        // Batting Leaderboards
+        html += `<div>
+            <h3>Batting</h3>
+            <h4>Most Runs</h4>
+            <table class="leaderboard-table"><thead><tr><th>#</th><th>Player</th><th>M</th><th>I</th><th>Runs</th><th>Avg</th><th>SR</th></tr></thead><tbody>`;
+        leaderboardData.sort((a,b) => b.runs - a.runs).slice(0, 10).forEach((p, i) => {
+            html += `<tr><td>${i+1}</td><td>${p.name}</td><td>${p.matches}</td><td>${p.inningsBat}</td><td>${p.runs}</td><td>${p.battingAvg}</td><td>${p.battingSR}</td></tr>`;
+        });
+        html += `</tbody></table>
+            <h4>Highest Individual Scores</h4>
+            <table class="leaderboard-table"><thead><tr><th>#</th><th>Player</th><th>Score</th><th>Date</th></tr></thead><tbody>`;
+        const battingPerformances = filteredMatches.flatMap(match => 
+            match.performances.filter(p => !p.dnbBat).map(p => ({ ...p, playerName: db.players.find(pl => pl.id === p.playerId)?.name || '?', date: match.date }))
+        ).sort((a,b) => (b.runs || 0) - (a.runs || 0)).slice(0, 10);
+        battingPerformances.forEach((p, i) => {
+            html += `<tr><td>${i+1}</td><td>${p.playerName}</td><td>${p.runs}${p.out === 'no' ? '*' : ''}</td><td>${p.date}</td></tr>`;
+        });
+        html += `</tbody></table></div>`;
+
+        // Bowling Leaderboards
+        html += `<div>
+            <h3>Bowling</h3>
+            <h4>Most Wickets</h4>
+            <table class="leaderboard-table"><thead><tr><th>#</th><th>Player</th><th>M</th><th>I</th><th>Wkts</th><th>Avg</th><th>Econ</th></tr></thead><tbody>`;
+        leaderboardData.sort((a,b) => b.wickets - a.wickets).slice(0, 10).forEach((p, i) => {
+            html += `<tr><td>${i+1}</td><td>${p.name}</td><td>${p.matches}</td><td>${p.inningsBowl}</td><td>${p.wickets}</td><td>${p.bowlingAvg}</td><td>${p.economy}</td></tr>`;
+        });
+        html += `</tbody></table>
+            <h4>Best Bowling Figures</h4>
+            <table class="leaderboard-table"><thead><tr><th>#</th><th>Player</th><th>Figures</th><th>Date</th></tr></thead><tbody>`;
+        const bowlingPerformances = filteredMatches.flatMap(match => 
+            match.performances.filter(p => !p.dnbBowl && p.overs).map(p => ({ ...p, playerName: db.players.find(pl => pl.id === p.playerId)?.name || '?', date: match.date }))
+        ).sort((a,b) => ((b.wkts || 0) - (a.wkts || 0)) || ((a.runsCon || 0) - (b.runsCon || 0))).slice(0, 10);
+        bowlingPerformances.forEach((p, i) => {
+            html += `<tr><td>${i+1}</td><td>${p.playerName}</td><td>${p.wkts}/${p.runsCon}</td><td>${p.date}</td></tr>`;
+        });
+        html += `</tbody></table></div>`;
+
+        html += '</div>';
+        leaderboardContent.innerHTML = html;
+    }
+
+
+    // --- H2H STATS ---
+    function populateH2HDropdowns() {
+        const createOptions = (select) => {
+            const currentVal = select.value;
+            select.innerHTML = `<option value="">-- Select Player --</option>`;
+            db.players.forEach(p => { select.innerHTML += `<option value="${p.id}">${p.name}</option>`; });
+            select.value = currentVal;
+        };
+        
+        const formatOptions = new Set(db.matches.map(m => m.format));
+        populateOptions(h2hFormatFilter, formatOptions, 'All Formats');
+        
+        const yearOptions = new Set(db.matches.map(m => m.date ? new Date(m.date).getFullYear() : null));
+        populateOptions(h2hYearFilter, yearOptions, 'All Years', true);
+        
+        const tournamentOptions = new Map(db.tournaments.map(t => [t.id, t.name]));
+        populateOptions(h2hTournamentFilter, new Set([...tournamentOptions.values()]), 'All Tournaments');
+        
+        createOptions(h2hPlayerASelect);
+        createOptions(h2hPlayerBSelect);
+        createOptions(h2hPlayerCSelect); // *** MODIFICATION: Populate Player C dropdown ***
+    }
+    
+    // *** MODIFICATION: Rewritten to handle 2 or 3 players dynamically and show different stats ***
+    function displayH2HStats() {
+        const playerAId = parseInt(h2hPlayerASelect.value);
+        const playerBId = parseInt(h2hPlayerBSelect.value);
+        const playerCId = parseInt(h2hPlayerCSelect.value);
+
+        // Create an array of only the selected player IDs
+        const playerIds = [playerAId, playerBId, playerCId].filter(id => !isNaN(id));
+
+        if (playerIds.length < 2) {
+            h2hResultsDiv.innerHTML = '<p>Select at least two players to compare.</p>';
+            return;
+        }
+
+        const filters = {
+            format: h2hFormatFilter.value,
+            year: h2hYearFilter.value,
+            tournament: h2hTournamentFilter.value
+        };
+
+        const playersData = playerIds.map(id => ({
+            player: db.players.find(p => p.id === id),
+            stats: getPlayerStats(id, filters)
+        }));
+        
+        const statRows = [
+            { "label": "Matches", "key": "matches" },
+            { "label": "Batting Innings", "key": "inningsBat" },
+            { "label": "Runs Scored", "key": "runs" },
+            { "label": "Highest Score", "key": "highestScore" },
+            { "label": "Batting Average", "key": "battingAvg" },
+            { "label": "Batting SR", "key": "battingSR" },
+            { "label": "50s", "key": "fifties" },
+            { "label": "25s", "key": "twentyFives" }, // Changed from 100s
+            { "label": "Ducks", "key": "ducks" },
+            { "label": "Bowling Innings", "key": "inningsBowl" },
+            { "label": "Wickets", "key": "wickets" },
+            { "label": "Best Bowling", "key": "bbi" },
+            { "label": "Bowling Average", "key": "bowlingAvg" },
+            { "label": "Economy", "key": "economy" },
+            { "label": "Bowling SR", "key": "bowlingSR" },
+            { "label": "3-Wicket Hauls", "key": "threeWicketHauls" }, // Changed from 5-Wicket Hauls
+            { "label": "MOTM Awards", "key": "motm" },
+            { "label": "Catches", "key": "catches" }
+        ];
+
+        let html = `<h3>Comparison</h3><table style="text-align:center;"><thead><tr><th>Stat</th>`;
+
+        // Dynamically create table headers for selected players
+        playersData.forEach(pData => {
+            html += `<th>${pData.player.name}</th>`;
+        });
+        html += `</tr></thead><tbody>`;
+
+        // Dynamically create table rows with stats for each player
+        statRows.forEach(row => {
+            html += `<tr><td><strong>${row.label}</strong></td>`;
+            playersData.forEach(pData => {
+                html += `<td>${pData.stats[row.key]}</td>`;
+            });
+            html += `</tr>`;
+        });
+
+        html += `</tbody></table>`;
+        h2hResultsDiv.innerHTML = html;
+    }
+
+
+    // --- STATS DISPLAY & CALCULATION ---
+    function getPlayerStats(playerId, filters) {
+        let performances = db.matches.flatMap(match => 
+            match.performances
+                .filter(p => p.playerId === playerId)
+                .map(p => ({ ...p, date: match.date, format: match.format, motmPlayerId: match.motmPlayerId, matchId: match.id, tournamentId: match.tournamentId }))
+        );
+        
+        if (filters.format) performances = performances.filter(p => p.format === filters.format);
+        if (filters.year) performances = performances.filter(p => p.date && new Date(p.date).getFullYear() == filters.year);
+        if (filters.tournament) {
+            const tournament = db.tournaments.find(t => t.name === filters.tournament);
+            if (tournament) {
+                performances = performances.filter(p => p.tournamentId === tournament.id);
+            }
+        }
+        
+        performances.sort((a, b) => new Date(a.date) - new Date(b.date));
+        
+        let stats = { 
+            matches: new Set(performances.map(p => p.matchId)).size, inningsBat: 0, notOuts: 0, runs: 0, highestScore: 0, 
+            ballsFaced: 0, twentyFives: 0, fifties: 0, hundreds: 0, fours: 0, sixes: 0, inningsBowl: 0, ballsBowled: 0, 
+            runsConceded: 0, wickets: 0, bestBBIWickets: 0, bestBBIRuns: Infinity, threeWicketHauls: 0, fiveWicketHauls: 0, 
+            hatTricks: 0, catches: 0, stumpings: 0, runOuts: 0, motm: 0, performances: [], last5BattingScores: [], 
+            last5BowlingFigures: [], dismissalTypes: {}, dismissedByBowlers: {}, caughtByFielders: {}, ducks: 0
+        };
+        
+        performances.forEach(p => {
+            stats.performances.push(p);
+            
+            if (!p.dnbBat) { 
+                stats.inningsBat++; 
+                if (p.out === 'no') stats.notOuts++; 
+                const runs = p.runs || 0;
+                stats.runs += runs;
+                stats.ballsFaced += p.balls || 0;
+                stats.fours += p.fours || 0;
+                stats.sixes += p.sixes || 0;
+                if (runs > stats.highestScore) stats.highestScore = runs;
+                if (runs >= 100) stats.hundreds++; else if (runs >= 50) stats.fifties++; else if (runs >= 25) stats.twentyFives++;
+                stats.last5BattingScores.unshift(runs);
+                if (p.out === 'yes') {
+                    const dismissalType = p.dismissalType || 'other';
+                    stats.dismissalTypes[dismissalType] = (stats.dismissalTypes[dismissalType] || 0) + 1;
+                    if (p.bowlerName) stats.dismissedByBowlers[p.bowlerName] = (stats.dismissedByBowlers[p.bowlerName] || 0) + 1;
+                    if (p.dismissalType === 'caught' && p.fielderName) stats.caughtByFielders[p.fielderName] = (stats.caughtByFielders[p.fielderName] || 0) + 1;
+                    if (runs === 0) stats.ducks++;
+                }
+            } else { stats.last5BattingScores.unshift(null); }
+            
+            if (!p.dnbBowl && p.overs) {
+                stats.inningsBowl++;
+                const balls = parseOversToBalls(p.overs);
+                stats.ballsBowled += balls;
+                stats.runsConceded += p.runsCon || 0;
+                const wkts = p.wkts || 0;
+                stats.wickets += wkts;
+                if (wkts > stats.bestBBIWickets || (wkts === stats.bestBBIWickets && (p.runsCon || 0) < stats.bestBBIRuns)) {
+                    stats.bestBBIWickets = wkts;
+                    stats.bestBBIRuns = p.runsCon || 0;
+                }
+                if (wkts >= 5) stats.fiveWicketHauls++; else if (wkts >= 3) stats.threeWicketHauls++;
+                if (p.hatTrick) stats.hatTricks++;
+                stats.last5BowlingFigures.unshift(p.runsCon != null ? `${wkts}/${p.runsCon}` : `${wkts}/-`);
+            } else { stats.last5BowlingFigures.unshift(null); }
+            
+            stats.catches += p.catches || 0;
+            stats.stumpings += p.stumpings || 0;
+            stats.runOuts += p.runOuts || 0;
+            if (p.motmPlayerId === playerId) stats.motm++;
+        });
+
+        const timesOut = stats.inningsBat - stats.notOuts;
+        stats.battingAvg = timesOut > 0 ? (stats.runs / timesOut).toFixed(2) : '∞';
+        stats.battingSR = stats.ballsFaced > 0 ? (stats.runs / stats.ballsFaced * 100).toFixed(2) : '0.00';
+        stats.overs = ballsToOvers(stats.ballsBowled);
+        stats.bowlingAvg = stats.wickets > 0 ? (stats.runsConceded / stats.wickets).toFixed(2) : '–';
+        stats.economy = stats.ballsBowled > 0 ? (stats.runsConceded / (stats.ballsBowled / 6)).toFixed(2) : '0.00';
+        stats.bowlingSR = stats.wickets > 0 ? (stats.ballsBowled / stats.wickets).toFixed(2) : '–';
+        stats.bbi = stats.bestBBIRuns === Infinity ? '-' : `${stats.bestBBIWickets}/${stats.bestBBIRuns}`;
+        stats.last5BattingScores = stats.last5BattingScores.slice(0, 5);
+        stats.last5BowlingFigures = stats.last5BowlingFigures.slice(0, 5);
+        
+        return stats;
+    }
+    function openStatsPage(playerId) {
+        currentStatsPlayerId = playerId;
+        switchTab('career-stats');
+        
+        const playerMatches = db.matches.filter(m => m.performances.some(p => p.playerId === playerId));
+        populateOptions(formatFilterSelect, new Set(playerMatches.map(m => m.format)), 'Overall Career');
+        populateOptions(yearFilterSelect, new Set(playerMatches.map(m => m.date ? new Date(m.date).getFullYear() : null)), 'All Years', true);
+        calculateAndDisplayStats(playerId, '', '');
+    }
+    function handleFilterChange() { 
+        if (currentStatsPlayerId) calculateAndDisplayStats(
+            currentStatsPlayerId, 
+            formatFilterSelect.value === 'Overall Career' ? '' : formatFilterSelect.value, 
+            yearFilterSelect.value === 'All Years' ? '' : yearFilterSelect.value
+        );
+    }
+    function calculateAndDisplayStats(playerId, formatFilter, yearFilter) {
+        const player = db.players.find(p => p.id === playerId);
+        if (!player) return;
+        
+        const filters = { format: formatFilter, year: yearFilter };
+        const stats = getPlayerStats(playerId, filters);
+
+        const getAge = dobString => {
+            if (!dobString || isNaN(new Date(dobString))) return 'N/A';
+            const ageDifMs = Date.now() - new Date(dobString).getTime();
+            return `${Math.abs(new Date(ageDifMs).getUTCFullYear() - 1970)} years old`;
+        };
+        
+        document.getElementById('statsPlayerName').textContent = player.name;
+        document.getElementById('statsPlayerAge').textContent = `Age: ${getAge(player.dob)}`;
+        document.getElementById('statsPlayerRole').textContent = `Role: ${player.role || 'N/A'}`;
+        document.getElementById('statsPlayerBatting').textContent = `Batting: ${player.battingStyle || 'N/A'}`;
+        document.getElementById('statsPlayerBowling').textContent = `Bowling: ${player.bowlingStyle || 'N/A'}`;
+        document.getElementById('statsAvatar').src = player.avatarUrl || 'https://www.gstatic.com/images/branding/product/1x/avatar_circle_grey_512dp.png';
+        
+        const setStat = (id, val) => document.getElementById(id).textContent = val;
+        setStat('c_m_bat', stats.matches); setStat('c_i_bat', stats.inningsBat); setStat('c_no', stats.notOuts);
+        setStat('c_runs', stats.runs); setStat('c_hs', stats.highestScore); setStat('c_avg_bat', stats.battingAvg);
+        setStat('c_bf', stats.ballsFaced); setStat('c_sr_bat', stats.battingSR); setStat('c_ducks', stats.ducks);
+        setStat('c_25s', stats.twentyFives); setStat('c_50s', stats.fifties); setStat('c_3w', stats.threeWicketHauls); 
+        setStat('c_5w', stats.fiveWicketHauls); setStat('c_hattrick', stats.hatTricks); setStat('c_motm', stats.motm);
+        setStat('c_ct', stats.catches); setStat('c_st', stats.stumpings); setStat('c_ro', stats.runOuts);
+        setStat('c_m_bowl', stats.matches); setStat('c_i_bowl', stats.inningsBowl); setStat('c_overs', stats.overs);
+        setStat('c_balls_bowl', stats.ballsBowled); setStat('c_runs_con', stats.runsConceded); setStat('c_wkts', stats.wickets);
+        setStat('c_bbi', stats.bbi); setStat('c_avg_bowl', stats.bowlingAvg); setStat('c_econ', stats.economy); setStat('c_sr_bowl', stats.bowlingSR);
+        
+        const recentBattingForm = document.getElementById('recentBattingForm');
+        recentBattingForm.innerHTML = '<strong>Recent Batting:</strong> ';
+        stats.last5BattingScores.forEach(score => {
+            const scoreEl = document.createElement('div');
+            scoreEl.className = 'recent-score';
+            scoreEl.textContent = score === null ? 'DNB' : score;
+            if (score >= 50) scoreEl.classList.add('highlight');
+            recentBattingForm.appendChild(scoreEl);
+        });
+
+        const badgesContainer = document.getElementById('badgesContainer');
+        badgesContainer.innerHTML = '<strong>Achievements:</strong> ';
+        const playerWithStats = { ...player, stats }; 
+        const unlockedAchievements = db.achievements.filter(ach => ach.condition(playerWithStats));
+        unlockedAchievements.forEach(ach => {
+            const badge = document.createElement('span');
+            badge.className = 'badge';
+            badge.textContent = ach.name;
+            badge.title = ach.description;
+            badgesContainer.appendChild(badge);
+        });
+        
+        updateCharts(playerId, stats, filters);
+        displayDismissalDetails(stats);
+    }
+
+    function displayDismissalDetails(stats) {
+        const renderTable = (tbody, data, emptyMsg) => {
+            tbody.innerHTML = '';
+            const sortedData = Object.entries(data).sort(([, a], [, b]) => b - a);
+            if (sortedData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="2">${emptyMsg}</td></tr>`;
+            } else {
+                sortedData.forEach(([name, count]) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `<td>${name}</td><td>${count}</td>`;
+                    tbody.appendChild(row);
+                });
+            }
+        };
+        renderTable(dismissedByBowlerTableBody, stats.dismissedByBowlers, 'No dismissal data by bowler.');
+        renderTable(caughtByFielderTableBody, stats.caughtByFielders, 'No caught dismissal data by fielder.');
+    }
+
+    function updateCharts(playerId, stats, filters) {
+        if (runsChart) runsChart.destroy();
+        const battingPerformances = stats.performances.filter(p => !p.dnbBat);
+        runsChart = new Chart(runsChartCanvas.getContext('2d'), {
+            type: 'line', 
+            data: {
+                labels: battingPerformances.map((p, i) => `Inn ${i+1}`),
+                datasets: [{ 
+                    label: 'Runs per Innings', data: battingPerformances.map(p => p.runs), 
+                    backgroundColor: 'rgba(26, 115, 232, 0.2)', borderColor: 'rgba(26, 115, 232, 1)', borderWidth: 2, tension: 0.1
+                }]
+            }, 
+            options: { scales: { y: { beginAtZero: true } } }
+        });
+
+        if (dismissalChart) dismissalChart.destroy();
+        dismissalChart = new Chart(dismissalChartCanvas.getContext('2d'), {
+            type: 'pie',
+            data: {
+                labels: Object.keys(stats.dismissalTypes),
+                datasets: [{ data: Object.values(stats.dismissalTypes),
+                    backgroundColor: ['#d93025', '#1e8e3e', '#ff9800', '#1a73e8', '#5f6368', '#f1f3f4', '#202124'], borderWidth: 1
+                }]
+            },
+            options: { responsive: true, plugins: { legend: { position: 'right' } } }
+        });
+
+        const progressionData = calculateCareerProgression(stats.performances);
+        if (careerProgressionBattingChart) careerProgressionBattingChart.destroy();
+        careerProgressionBattingChart = new Chart(careerProgressionBattingChartCanvas.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: progressionData.map((_, i) => `Match ${i+1}`),
+                datasets: [{
+                    label: 'Batting Average', data: progressionData.map(d => d.battingAvg === '∞' ? NaN : parseFloat(d.battingAvg)), 
+                    borderColor: 'rgba(75, 192, 192, 1)', backgroundColor: 'rgba(75, 192, 192, 0.2)', tension: 0.1
+                }]
+            },
+            options: { responsive: true }
+        });
+        if (careerProgressionBowlingChart) careerProgressionBowlingChart.destroy();
+        careerProgressionBowlingChart = new Chart(careerProgressionBowlingChartCanvas.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: progressionData.map((_, i) => `Match ${i+1}`),
+                datasets: [{
+                    label: 'Bowling Average', data: progressionData.map(d => d.bowlingAvg === '–' ? NaN : parseFloat(d.bowlingAvg)), 
+                    borderColor: 'rgba(255, 99, 132, 1)', backgroundColor: 'rgba(255, 99, 132, 0.2)', tension: 0.1
+                }]
+            },
+            options: { responsive: true }
+        });
+    }
+    function calculateCareerProgression(performances) {
+        const progression = [];
+        let cumulativeStats = { inningsBat: 0, notOuts: 0, runs: 0, ballsBowled: 0, runsConceded: 0, wickets: 0 };
+        
+        const matchesInOrder = [...new Map(performances.map(p => [p.matchId, db.matches.find(m => m.id === p.matchId)]))
+            .values()].filter(Boolean).sort((a,b) => new Date(a.date) - new Date(b.date));
+
+        matchesInOrder.forEach(match => {
+            const matchPerformances = performances.filter(p => p.matchId === match.id);
+            
+            matchPerformances.forEach(p => {
+                if (!p.dnbBat) {
+                    cumulativeStats.inningsBat++;
+                    cumulativeStats.runs += p.runs || 0;
+                    if (p.out === 'no') cumulativeStats.notOuts++;
+                }
+                if (!p.dnbBowl && p.overs) {
+                    cumulativeStats.ballsBowled += parseOversToBalls(p.overs);
+                    cumulativeStats.runsConceded += p.runsCon || 0;
+                    cumulativeStats.wickets += p.wkts || 0;
+                }
+            });
+            
+            const timesOut = cumulativeStats.inningsBat - cumulativeStats.notOuts;
+            progression.push({
+                battingAvg: timesOut > 0 ? (cumulativeStats.runs / timesOut).toFixed(2) : '∞',
+                bowlingAvg: cumulativeStats.wickets > 0 ? (cumulativeStats.runsConceded / cumulativeStats.wickets).toFixed(2) : '–'
+            });
+        });
+        return progression;
+    }
+
+    // --- ACHIEVEMENTS ---
+    function checkForNewAchievements() {
+        db.players.forEach(player => {
+            const stats = getPlayerStats(player.id, {});
+            const playerWithStats = { ...player, stats }; 
+            db.achievements.forEach(ach => {
+                if (!player.achievements?.includes(ach.id) && ach.condition(playerWithStats)) {
+                    if (!player.achievements) player.achievements = [];
+                    player.achievements.push(ach.id);
+                    alert(`${player.name} has unlocked the "${ach.name}" achievement!`);
+                }
+            });
+        });
+        saveData();
+    }
+
+    // --- ARCHIVE ---
+    function purgeOldTrash() {
+        const threeDaysAgo = Date.now() - 3 * 24 * 60 * 60 * 1000;
+        db.trash = db.trash.filter(item => new Date(item.deletedOn).getTime() > threeDaysAgo);
+        saveData();
+    }
+    function renderArchive() {
+        archiveTableBody.innerHTML = '';
+        [...db.trash].reverse().forEach(item => {
+            const itemName = item.type === 'player' ? item.data.name : `Match on ${item.data.date}`;
+            const row = document.createElement('tr');
+            row.innerHTML = `<td>${itemName}</td><td>${item.type}</td><td>${new Date(item.deletedOn).toLocaleString()}</td>
+                <td><button class="btn-small btn-success" data-item-id="${item.data.id}" data-item-type="${item.type}" data-action="restore">Restore</button>
+                    <button class="btn-small btn-danger" data-item-id="${item.data.id}" data-item-type="${item.type}" data-action="delete-perm">Delete Permanently</button></td>`;
+            archiveTableBody.appendChild(row);
+        });
+    }
+    function deleteToArchive(type, id) {
+        let itemIndex = -1, itemToMove = null, list;
+        if (type === 'player') list = db.players;
+        else if (type === 'match') list = db.matches;
+        else if (type === 'tournament') list = db.tournaments;
+        else return;
+
+        itemIndex = list.findIndex(p => p.id === id);
+        if (itemIndex > -1) {
+            [itemToMove] = list.splice(itemIndex, 1);
+            db.trash.push({ type: type, data: itemToMove, deletedOn: new Date().toISOString() });
+            saveData();
+            renderAll();
+        }
+    }
+    function handleArchiveClick(e) {
+        const targetButton = e.target.closest('button');
+        if (!targetButton) return;
+        const { action, itemId, itemType } = targetButton.dataset;
+        const id = parseInt(itemId);
+        const itemIndex = db.trash.findIndex(i => i.data.id === id && i.type === itemType);
+        if (itemIndex === -1) return;
+
+        if (action === 'restore') {
+            const [item] = db.trash.splice(itemIndex, 1);
+            delete item.data.deletedOn;
+            if (item.type === 'player') db.players.push(item.data);
+            else if (item.type === 'match') db.matches.push(item.data);
+            else if (item.type === 'tournament') db.tournaments.push(item.data);
+        } else if (action === 'delete-perm') {
+            if (confirm('This cannot be undone. Are you sure?')) {
+                db.trash.splice(itemIndex, 1);
+            }
+        }
+        saveData();
+        renderAll();
+    }
+    
+    // --- UTILITY FUNCTIONS ---
+    function populateOptions(selectElement, itemSet, defaultOptionText, sortDesc = false) {
+        const currentVal = selectElement.value;
+        selectElement.innerHTML = `<option value="">${defaultOptionText}</option>`;
+        let items = [...itemSet].filter(Boolean);
+        if (sortDesc) items.sort((a,b) => b-a); else items.sort();
+        items.forEach(item => { selectElement.innerHTML += `<option value="${item}">${item}</option>`; }); 
+        selectElement.value = currentVal;
+    }
+    function parseOversToBalls(oversString) {
+        if (typeof oversString !== 'string' || !oversString) return 0;
+        const [whole, partial] = oversString.split('.').map(Number);
+        return (whole || 0) * 6 + (partial || 0);
+    }
+    function ballsToOvers(balls) {
+        if (!balls) return '0.0';
+        return `${Math.floor(balls / 6)}.${balls % 6}`;
+    }
+});
+</script>
+
+</body>
+</html>
